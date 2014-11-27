@@ -23,24 +23,34 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
+app.get('/',
 function(req, res) {
+  console.log(req);
+  if (!isLoggedIn()){
+    res.redirect('/login');
+  }
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create',
 function(req, res) {
+  if (!isLoggedIn()){
+    res.redirect('/login');
+  }
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links',
 function(req, res) {
+  if (!isLoggedIn()){
+    res.redirect('/login');
+  }
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -77,8 +87,45 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+var isLoggedIn = function (user) {
+  console.log('i am not logging you in');
+  return true;
+};
 
+app.get('/login', function (req, res){
+  res.render('login');
+});
 
+app.get('/signup', function(req, res) {
+  res.render('signup', {usernameTaken: false});
+});
+
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+
+  if (req.body.password.length < 6) {
+    res.redirect('http://www.youareanidiot.org/');
+  }
+
+  // if username is unique
+  new User({username: username}).fetch().then(function(userModel){
+    // send error to client if username exists
+    if (userModel) {
+      res.render('signup', {usernameTaken: true});
+    } else {
+      // store it
+      var user = new User({
+        username: username,
+        password: req.body.password
+      });
+
+      user.save().then(function(newUser){
+        Users.add(newUser);
+        res.redirect('/');
+      });
+    }
+  });
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
