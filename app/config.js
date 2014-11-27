@@ -46,8 +46,7 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 /************************************************************/
 db.knex.schema.hasTable('users').then(function(exists) {
 
-  // if (!exists) {
-    db.knex.dropTable('users');
+  if (!exists) {
     db.knex.schema.createTable('users', function (user) {
       user.increments('id').primary();
       user.string('username', 20);
@@ -57,7 +56,7 @@ db.knex.schema.hasTable('users').then(function(exists) {
     }).then(function (table) {
       console.log('Created Table', table);
     });
-  // }
+  }
 });
 
 module.exports = db;

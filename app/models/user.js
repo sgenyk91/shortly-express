@@ -7,18 +7,17 @@ var User = db.Model.extend({
   defaults: {
     username: null,
     password: null,
-    signedIn: false
   },
   hasTimestamps: true,
-  isLoggedIn: function() {
-    return this.signedIn;
-  },
-  logIn: function() {
-    this.signedIn = true;
-  },
-  logOut: function() {
-    this.signedIn = false;
-  }
+  // isLoggedIn: function() {
+  //   return this.signedIn;
+  // },
+  // logIn: function() {
+  //   this.signedIn = true;
+  // },
+  // logOut: function() {
+  //   this.signedIn = false;
+  // }
 });
 
 module.exports = User;

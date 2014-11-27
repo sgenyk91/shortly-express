@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var bcrypt = require('bcrypt');
 
 
 var db = require('./app/config');
@@ -25,7 +26,6 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
-  console.log(req);
   if (!isLoggedIn()){
     res.redirect('/login');
   }
@@ -114,15 +114,20 @@ app.post('/signup', function(req, res) {
       res.render('signup', {usernameTaken: true});
     } else {
       // store it
-      var user = new User({
-        username: username,
-        password: req.body.password
+      bcrypt.hash(req.body.password, 8, function(err, hashedPassword) {
+        if (err) console.log(err);
+
+        var user = new User({
+          username: username,
+          password: hashedPassword
+        });
+
+        user.save().then(function(newUser){
+          Users.add(newUser);
+          res.redirect('/');
+        });
       });
 
-      user.save().then(function(newUser){
-        Users.add(newUser);
-        res.redirect('/');
-      });
     }
   });
 });
