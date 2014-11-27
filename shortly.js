@@ -3,7 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -13,6 +13,12 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+
+app.use(session({
+  secret: 'stfu',
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -88,12 +94,36 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 var isLoggedIn = function (user) {
-  console.log('i am not logging you in');
   return true;
 };
 
 app.get('/login', function (req, res){
   res.render('login');
+});
+
+app.post('/login', function (req, res){
+  var username = req.body.username;
+
+  new User({username: username}).fetch().then(function(userModel){
+    if (userModel) {
+      bcrypt.compare(req.body.password, userModel.get('password'), function(err, matched) {
+        if (err) console.log("err", err);
+        if (matched) {
+          // spawn a session
+          // res.redirect('/');
+          req.session.regenerate(function(){
+            req.session.user = username;
+            console.log(req.session);
+            res.redirect('/');
+          });
+        } else {
+          res.redirect('/login'); //incorrect both
+        }
+      });
+    } else {
+      res.redirect('/login'); //incorrect both
+    }
+  });
 });
 
 app.get('/signup', function(req, res) {
