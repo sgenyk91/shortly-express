@@ -14,12 +14,6 @@ var Click = require('./app/models/click');
 
 var app = express();
 
-app.use(session({
-  secret: 'stfu',
-  resave: false,
-  saveUninitialized: true
-}));
-
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -29,28 +23,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({
+  secret: 'stfu',
+  resave: false,
+  saveUninitialized: true
+}));
 
-app.get('/',
-function(req, res) {
-  if (!isLoggedIn()){
-    res.redirect('/login');
-  }
+
+app.get('/', util.checkUser, function(req, res) {
   res.render('index');
 });
 
-app.get('/create',
-function(req, res) {
-  if (!isLoggedIn()){
-    res.redirect('/login');
-  }
+app.get('/create', util.checkUser, function(req,  res) {
   res.render('index');
 });
 
-app.get('/links',
-function(req, res) {
-  if (!isLoggedIn()){
-    res.redirect('/login');
-  }
+app.get('/links', util.checkUser, function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
@@ -93,9 +81,12 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-var isLoggedIn = function (user) {
-  return true;
-};
+
+app.get('/logout', function(req, res) {
+  req.session.destroy(function(){
+    res.redirect('/login');
+  });
+});
 
 app.get('/login', function (req, res){
   res.render('login');
@@ -111,10 +102,7 @@ app.post('/login', function (req, res){
         if (matched) {
           // spawn a session
           // res.redirect('/');
-          req.session.regenerate(function(){
-            req.session.user = username;
-            console.log(req.session);
-            res.redirect('/');
+          util.createSession(req, res, user);
           });
         } else {
           res.redirect('/login'); //incorrect both
@@ -146,16 +134,12 @@ app.post('/signup', function(req, res) {
       // store it
       bcrypt.hash(req.body.password, 8, function(err, hashedPassword) {
         if (err) console.log(err);
-
-        var user = new User({
-          username: username,
-          password: hashedPassword
-        });
-
-        user.save().then(function(newUser){
-          Users.add(newUser);
-          res.redirect('/');
-        });
+          Users.create({
+            username: username,
+            password: hash
+          }).then(function(user) {
+              util.createSession(req, res, user);
+          });
       });
 
     }
@@ -178,13 +162,10 @@ app.get('/*', function(req, res) {
       });
 
       click.save().then(function() {
-        db.knex('urls')
-          .where('code', '=', link.get('code'))
-          .update({
-            visits: link.get('visits') + 1,
-          }).then(function() {
-            return res.redirect(link.get('url'));
-          });
+        link.set('visits', link.get('visits') + 1);
+        link.save().then(function() {
+          return res.redirect(link.get('url'));
+        });
       });
     }
   });

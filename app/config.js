@@ -44,14 +44,14 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 /************************************************************/
 // Add additional schema definitions below
 /************************************************************/
-db.knex.schema.hasTable('users').then(function(exists) {
 
+db.knex.schema.hasTable('users').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('users', function (user) {
       user.increments('id').primary();
-      user.string('username', 20);
+      user.string('username', 50).unique();
       user.string('password', 254);
-      user.boolean('signedIn');
+      user.boolean('signedIn'); //might need to get rid of this
       user.timestamps();
     }).then(function (table) {
       console.log('Created Table', table);
